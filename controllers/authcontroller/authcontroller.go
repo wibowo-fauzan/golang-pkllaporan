@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jeypc/go-jwt-mux/config"
+	"golang-pkllaporan/config"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/jeypc/go-jwt-mux/helper"
+	"golang-pkllaporan/helper"
 	"gorm.io/gorm"
 
-	"github.com/jeypc/go-jwt-mux/models"
+	"golang-pkllaporan/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,7 +29,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	// ambil data user berdasarkan username
 	var user models.User
-	if err := models.DB.Where("username = ?", userInput.Username).First(&user).Error; err != nil {
+	if err := config.DB.Where("username = ?", userInput.Username).First(&user).Error; err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
 			response := map[string]string{"message": "Username atau password salah"}
@@ -98,7 +98,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	userInput.Password = string(hashPassword)
 
 	// insert ke database
-	if err := models.DB.Create(&userInput).Error; err != nil {
+	if err := config.DB.Create(&userInput).Error; err != nil {
 		response := map[string]string{"message": err.Error()}
 		helper.ResponseJSON(w, http.StatusInternalServerError, response)
 		return

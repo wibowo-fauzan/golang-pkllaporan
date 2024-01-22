@@ -4,18 +4,18 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jeypc/go-jwt-mux/middlewares"
+	"golang-pkllaporan/config"
+	"golang-pkllaporan/middlewares"
 
-	"github.com/jeypc/go-jwt-mux/controllers/authcontroller"
-	"github.com/jeypc/go-jwt-mux/controllers/productcontroller"
-	"github.com/jeypc/go-jwt-mux/models"
+	"golang-pkllaporan/controllers/authcontroller"
+	"golang-pkllaporan/controllers/productcontroller"
 
 	"github.com/gorilla/mux"
 )
 
 func main() {
 
-	models.ConnectDatabase()
+	config.ConnectDatabase()
 	r := mux.NewRouter()
 
 	r.HandleFunc("/login", authcontroller.Login).Methods("POST")

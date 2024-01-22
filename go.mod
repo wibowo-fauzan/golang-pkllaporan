@@ -1,4 +1,4 @@
-module github.com/jeypc/go-jwt-mux
+module golang-pkllaporan
 
 go 1.18
 

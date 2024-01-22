@@ -3,7 +3,7 @@ package productcontroller
 import (
 	"net/http"
 
-	"github.com/jeypc/go-jwt-mux/helper"
+	"golang-pkllaporan/helper"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
