@@ -2,22 +2,27 @@ package authcontroller
 
 import (
 	"encoding/json"
+	"golang-pkllaporan/config"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 
-	"golang-pkllaporan/config"
+	"github.com/gorilla/mux"
+
+	"golang-pkllaporan/helper"
 
 	"github.com/golang-jwt/jwt/v4"
-	"golang-pkllaporan/helper"
 	"gorm.io/gorm"
 
 	"golang-pkllaporan/models"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
+// login user / akun
+// login user / akun
 func Login(w http.ResponseWriter, r *http.Request) {
-
-	// mengambil inputan json
 	var userInput models.User
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&userInput); err != nil {
@@ -27,12 +32,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// ambil data user berdasarkan username
+	// ambil data user berdasarkan Email
 	var user models.User
-	if err := config.DB.Where("username = ?", userInput.Username).First(&user).Error; err != nil {
+	if err := config.DB.Where("email = ?", userInput.Email).First(&user).Error; err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
-			response := map[string]string{"message": "Username atau password salah"}
+			response := map[string]string{"message": "Gmail atau password salah"}
 			helper.ResponseJSON(w, http.StatusUnauthorized, response)
 			return
 		default:
@@ -43,16 +48,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// cek apakah password valid
+	log.Println("Hashed Password from Database:", user.Password)
+	log.Println("Entered Password:", userInput.Password)
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userInput.Password)); err != nil {
-		response := map[string]string{"message": "Username atau password salah"}
+		log.Println("Password Comparison Error:", err)
+		response := map[string]string{"message": "Invalid credentials"}
 		helper.ResponseJSON(w, http.StatusUnauthorized, response)
 		return
 	}
 
+	// Autentikasi berhasil
+	// Misalnya, buat dan kirimkan token JWT di sini
+
 	// proses pembuatan token jwt
 	expTime := time.Now().Add(time.Minute * 1)
 	claims := &config.JWTClaim{
-		Username: user.Username,
+		Email: user.Email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "go-jwt-mux",
 			ExpiresAt: jwt.NewNumericDate(expTime),
@@ -81,6 +93,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	helper.ResponseJSON(w, http.StatusOK, response)
 }
 
+// create-new user / akun
 func Register(w http.ResponseWriter, r *http.Request) {
 
 	// mengambil inputan json
@@ -108,6 +121,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	helper.ResponseJSON(w, http.StatusOK, response)
 }
 
+// logout user / akun
 func Logout(w http.ResponseWriter, r *http.Request) {
 	// hapus token yang ada di cookie
 	http.SetCookie(w, &http.Cookie{
@@ -119,5 +133,37 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	response := map[string]string{"message": "logout berhasil"}
+	helper.ResponseJSON(w, http.StatusOK, response)
+}
+
+// delete user / akun
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	// Ambil ID pengguna yang akan dihapus dari parameter URL
+	vars := mux.Vars(r)
+	userID, ok := vars["id"]
+
+	// Lakukan validasi ID pengguna
+	if !ok || userID == "" {
+		response := map[string]string{"message": "ID pengguna tidak valid"}
+		helper.ResponseJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Periksa apakah userID adalah angka
+	_, err := strconv.Atoi(userID)
+	if err != nil {
+		response := map[string]string{"message": "ID pengguna harus berupa angka"}
+		helper.ResponseJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Hapus pengguna dari database berdasarkan ID
+	if err := config.DB.Where("id = ?", userID).Delete(&models.User{}).Error; err != nil {
+		response := map[string]string{"message": "Gagal menghapus pengguna", "error": err.Error()}
+		helper.ResponseJSON(w, http.StatusInternalServerError, response)
+		return
+	}
+
+	response := map[string]string{"message": "Pengguna berhasil dihapus"}
 	helper.ResponseJSON(w, http.StatusOK, response)
 }
